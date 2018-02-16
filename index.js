@@ -60,22 +60,65 @@ function getFilmRecommendations(req, res) {
     AND
       films.release_date >= date((SELECT films.release_date FROM films WHERE id = $id),'-15 years') 
     AND
-      films.release_date <= date((SELECT films.release_date FROM films WHERE id = $id), '+15 years')`,{$id: id}, (err, row) => {
+      films.release_date <= date((SELECT films.release_date FROM films WHERE id = $id), '+15 years')`,{$id: id}, (err, rows) => {
         if(err) console.error(err.message);
         
-        if(row === undefined) {
-          return res.json({message: 'No film with id: ' + id +'.'});
+        if(rows === undefined) {
+          return res.json({message: 'No film with id: ' + id + '.'});
         } 
 
-        res.status(200).send(row);
-        console.log(row);
+        //res.status(200).send(rows);
+        fetchReviewsFromAPI(rows);
+        //console.log(row);
         
   });
 
 }
 
 // This helper function will retrieve the ratings and Review from the third party API
-function fetchReviewsFromAPI(data) {
+function fetchReviewsFromAPI(filmList) {
+
+  // Get ids of the filmList and transform the array into a string
+  const filmIDList = filmList.map(film => {
+    return film.id;
+  }).join(',');
+
+  // Build the URI for the API request
+  let apiRequestInfo = {
+    uri: BASE_API_URL + '?films=' + filmIDList,
+    json: true
+  };
   
+  request.get(apiRequestInfo, (err, res, body)=> {
+    let reviews = res.body;
+
+    // this loop iterates throught the filmList and search
+    // for films which has a minimum of 5 reviews and a 
+    // average ratings greater than 4.0.
+    for(let k = 0; k < filmList; k++) {
+      if(filmList[k].id === reviews[k].film_id) {
+        let avgRatings = getAvgRatings(reviews[k].reviews)
+        if(reviews[k].reviews.length >= 5 && avgRatings > 4.0) {
+          filmList[k].reviews = reviews[k].reviews;
+          filmList[k].avgRatings = getAvgRatings;
+        }
+      }
+    }
+
+
+
+  })
+}
+
+// This helper method get the average rating for each review. 
+function getAvgRatings(reviews) {
+  let sumOfReviews = 0.0;
+  let numOfReviews = reviews.length;
+  
+  reviews.forEach(review => {
+    total += review.rating;
+  });
+
+  return sumOfReviews / numOfReviews;
 }
 module.exports = app;
