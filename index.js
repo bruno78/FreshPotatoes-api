@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3'),
+const sqlite3 = require('sqlite3').verbose(),
       Sequelize = require('sequelize'),
       request = require('request'),
       express = require('express'),
@@ -51,10 +51,25 @@ function getFilmRecommendations(req, res) {
   
   let id = req.params.id; 
   let data = [];
-  db.all("SELECT * FROM films WHERE id = $id", {$id: id}, (err, row) => {
-    console.log(row);
-    console.log("hey there");
-  })
+
+  db.all(
+    `SELECT films.id, films.title, films.release_date, genres.name AS genre FROM films 
+    INNER JOIN genres ON films.genre_id = genres.id
+    WHERE genre_id = (SELECT genre_id FROM films WHERE id = $id) 
+    AND
+      films.release_date >= date((SELECT films.release_date FROM films WHERE id = $id),'-15 years') 
+    AND
+      films.release_date <= date((SELECT films.release_date FROM films WHERE id = $id), '+15 years')`,{$id: id}, (err, row) => {
+        if(err) console.error(err.message);
+        
+        if(row === undefined) {
+          return res.json({message: 'No film with id: ' + id +'.'});
+        } 
+
+        res.status(200).send(row);
+        console.log(row);
+        
+  });
 
 }
 
