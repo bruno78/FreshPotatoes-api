@@ -27,10 +27,10 @@ function getFilmRecommendations(req, res) {
 
   /**
    * TODO: 1. Recommended films must have:
-   * IMPLEMENT: The same genre as the parent film
+   * DONE: The same genre as the parent film
    * IMPLEMENT: A mininum of 5 reviews
    * IMPLEMENT: An average rating greater than 4.0
-   * IMPLEMENT: Been released within 15 years, before or after the
+   * DONE: Been released within 15 years, before or after the
    * the parent film
    * IMPLEMENT: A sort order based on film id (order by film id)
    */
@@ -52,8 +52,9 @@ function getFilmRecommendations(req, res) {
   let id = req.params.id; 
   let data = [];
 
+  // This query returns the id, title, release date and genre of ALL the movies that has the same genre and it's within 15 years before and after the parent film's release date.
   db.all(
-    `SELECT films.id, films.title, films.release_date, genres.name AS genre FROM films 
+    `SELECT films.id, films.title, films.release_date AS releaseDate, genres.name AS genre FROM films 
     INNER JOIN genres ON films.genre_id = genres.id
     WHERE genre_id = (SELECT genre_id FROM films WHERE id = $id) 
     AND
@@ -73,4 +74,8 @@ function getFilmRecommendations(req, res) {
 
 }
 
+// This helper function will retrieve the ratings and Review from the third party API
+function fetchReviewsFromAPI(data) {
+  
+}
 module.exports = app;
