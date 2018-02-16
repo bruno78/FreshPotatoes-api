@@ -137,7 +137,7 @@ function getFilmRecommendations(req, res) {
           });
 
           res.json({
-            recommentations: recommendedFilmList,
+            recommentations: recommendedFilmList.slice(offset, offset + limit),
             meta: {limit: limit, offset: offset}
           })
 
