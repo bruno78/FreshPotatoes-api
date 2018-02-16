@@ -37,8 +37,8 @@ function getFilmRecommendations(req, res) {
 
    /**
     * TODO: 2. The application should allow developers to:
-    * IMPLEMENT: Paginate by offeset
-    * IMPLEMENT: Limit the number of returned records
+    * DONE: Paginate by offset
+    * DONE: Limit the number of returned records
     */
 
     /**
@@ -49,8 +49,15 @@ function getFilmRecommendations(req, res) {
 
   // res.status(500).send('Not Implemented');
   
-  let id = req.params.id; 
-  let data = [];
+  // Get the id of the parent movie from URI
+  let id = req.params.id;
+  
+  // Default limit value 
+  let limit = 10;
+
+  // Default offset value 
+  let offset = 0
+
 
   // This query returns the id, title, release date and genre of ALL the movies that has the same genre and it's within 15 years before and after the parent film's release date.
   db.all(
@@ -66,13 +73,12 @@ function getFilmRecommendations(req, res) {
         if(rows === undefined) {
           return res.json({message: 'No film with id: ' + id + '.'});
         } 
-
+        
         //res.status(200).send(rows);
         fetchReviewsFromAPI(rows);
         //console.log(row);
         
   });
-
 }
 
 // This helper function will retrieve the ratings and Review from the third party API
@@ -105,12 +111,18 @@ function fetchReviewsFromAPI(filmList) {
       }
     }
 
+    // Handles offset, limit and response in json format
+    res.json({
+      recomendations: filmList.slice(offset, offset+limit),
+      meta: {limit: limit, offset: offset}
+    });
+
 
 
   })
 }
 
-// This helper method get the average rating for each review. 
+// Helper method get the average rating for each review. 
 function getAvgRatings(reviews) {
   let sumOfReviews = 0.0;
   let numOfReviews = reviews.length;
@@ -118,6 +130,7 @@ function getAvgRatings(reviews) {
   reviews.forEach(review => {
     total += review.rating;
   });
+
 
   return sumOfReviews / numOfReviews;
 }
