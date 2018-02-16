@@ -47,7 +47,14 @@ function getFilmRecommendations(req, res) {
      * IMPLEMENT: Missing routes
      */
 
-  res.status(500).send('Not Implemented');
+  // res.status(500).send('Not Implemented');
+  
+  let id = req.params.id; 
+  let data = [];
+  db.all("SELECT * FROM films WHERE id = $id", {$id: id}, (err, row) => {
+    console.log(row);
+    console.log("hey there");
+  })
 
 }
 
