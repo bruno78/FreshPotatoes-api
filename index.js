@@ -1,4 +1,6 @@
-const sqlite3 = require('sqlite3').verbose(),
+import { error } from 'util';
+
+const sqlite3 = require('sqlite3').verbose(), // Add more info to db stack trace.
       Sequelize = require('sequelize'),
       request = require('request'),
       express = require('express'),
@@ -32,6 +34,9 @@ Promise.resolve()
 
 // ROUTES
 app.get('/films/:id/recommendations', getFilmRecommendations);
+app.get('*', (req, res) => {
+  res.status(404).json({ message: 'Page not found!'});
+});
 
 
 // ROUTE HANDLER
@@ -62,90 +67,89 @@ function getFilmRecommendations(req, res) {
   // res.status(500).send('Not Implemented');
   
   // Get the id of the parent movie from URI
-  let id = req.params.id;
-  let filmList = [];
+  let filmId = req.params.id;
   
-  // Default limit value 
-  let limit = 10;
-  if(req.query.limit) {
-    offset = parseInt(req.query.limit);
-  }
+  // Set limit value 
+  let limit = req.params.limit || 10;
 
-  // Default offset value 
-  let offset = 0;
-  if(req.query.offset) {
-    offset = parseInt(req.query.offset);
-  }
+  // Set offset value
+  let offset = req.params.offset || 0;
+
+  // Check for errors
+  errorHandler(filmId);
+  errorHandler(limit);
+  errorHandler(offset);
+
 
   // This query returns the id, title, release date and genre of ALL the movies that has the same genre and it's within 15 years before and after the parent film's release date.
-  sequelize.query(`SELECT films.id, films.title, films.release_date AS releaseDate, genres.name AS genre FROM films 
-    INNER JOIN genres ON films.genre_id = genres.id
-    WHERE genre_id = (SELECT genre_id FROM films WHERE id = :id) 
-    AND
-      films.release_date >= date((SELECT films.release_date FROM films WHERE id = :id),'-15 years') 
-    AND
-      films.release_date <= date((SELECT films.release_date FROM films WHERE id = :id), '+15 years')`, {replacements: {id: id}, type: sequelize.QueryTypes.SELECT })
-      .then( results => {
+  // sequelize.query(`SELECT films.id, films.title, films.release_date AS releaseDate, genres.name AS genre FROM films 
+  //   INNER JOIN genres ON films.genre_id = genres.id
+  //   WHERE genre_id = (SELECT genre_id FROM films WHERE id = :id) 
+  //   AND
+  //     films.release_date >= date((SELECT films.release_date FROM films WHERE id = :id),'-15 years') 
+  //   AND
+  //     films.release_date <= date((SELECT films.release_date FROM films WHERE id = :id), '+15 years')`, {replacements: {id: filmId}, type: sequelize.QueryTypes.SELECT })
+  //     .then( results => {
         
-        // console.log(results);
+  //       // console.log(results);
 
-        // Get ids of the filmList and transform the array into a string
-        const filmIDList = results.map(film => {
-          return film.id;
-        }).join(',');
+  //       // Get ids of the filmList and transform the array into a string
+  //       const filmIDList = results.map(film => {
+  //         return film.id;
+  //       }).join(',');
       
-        // Build the URI for the API request
-        let apiRequestInfo = {
-          uri: BASE_API_URL + '?films=' + filmIDList,
-          json: true
-        };
+  //       // Build the URI for the API request
+  //       let apiRequestInfo = {
+  //         uri: BASE_API_URL + '?films=' + filmIDList,
+  //         json: true
+  //       };
 
-        // Send request to 3rd party API
-        request.get(apiRequestInfo, (err, response, body) => {
+  //       // Send request to 3rd party API
+  //       request.get(apiRequestInfo, (err, response, body) => {
 
-          // Get the list of reviews
-          let reviews = response.body;
+  //         // Get the list of reviews
+  //         let reviews = response.body;
 
-          // console.log(reviews);
+  //         // console.log(reviews);
 
-          // Add reviews from 3rd party api to the results list
-          // Get the number of reviews
-          // Get the average ratings from the reviews. 
-          for(let k = 0; k < results.length; k++) {
-            if(results[k].id === reviews[k].film_id) {
-              results[k].reviews = reviews[k].reviews.length;
-              results[k].averageRating = getAvgRatings(reviews[k].reviews);
-            }
-          }
+  //         // Add reviews from 3rd party api to the results list
+  //         // Get the number of reviews
+  //         // Get the average ratings from the reviews. 
+  //         for(let k = 0; k < results.length; k++) {
+  //           if(results[k].id === reviews[k].film_id) {
+  //             results[k].reviews = reviews[k].reviews.length;
+  //             results[k].averageRating = getAvgRatings(reviews[k].reviews);
+  //           }
+  //         }
 
-          // filtering results by review length and average ratings
-          let filteredResults = results.filter( (result) => {
-            return result.reviews >= 5 && reviews.getAvgRating > 4.0;
-          });
+  //         // filtering results by review length and average ratings
+  //         let filteredResults = results.filter( (result) => {
+  //           return result.reviews >= 5 && reviews.getAvgRating > 4.0;
+  //         });
 
-          // Build the recommended film list
-          let recommendedFilmList = [];
-          filteredResults.forEach( film => {
-            recommendedFilmList.push({
-              id: film.id,
-              title: film.title,
-              releaseDate: film.releaseDate,
-              genre: film.genre,
-              averageRating: film.averageRating,
-              reviews: film.reviews.length
-            });
-          });
+  //         // Build the recommended film list
+  //         let recommendedFilmList = [];
+  //         filteredResults.forEach( film => {
+  //           recommendedFilmList.push({
+  //             id: film.id,
+  //             title: film.title,
+  //             releaseDate: film.releaseDate,
+  //             genre: film.genre,
+  //             averageRating: film.averageRating,
+  //             reviews: film.reviews.length
+  //           });
+  //         });
 
-          res.json({
-            recommentations: recommendedFilmList.slice(offset, offset + limit),
-            meta: {limit: limit, offset: offset}
-          })
+  //         res.json({
+  //           recommentations: recommendedFilmList.slice(offset, offset + limit),
+  //           meta: {limit: limit, offset: offset}
+  //         })
 
-        });
-      })
-      .catch((err) => {
-        res.status(422).json({message: ERROR_MESSAGE});
-      });
+  //       });
+  //     })
+  //     .catch((err) => {
+  //       res.status(422).json({message: ERROR_MESSAGE});
+  //     });
 
   // Helper method get the average rating for each review. 
   function getAvgRatings(reviews) {
@@ -157,9 +161,13 @@ function getFilmRecommendations(req, res) {
     });
     return (sumOfReviews / numOfReviews).toFixed(2);
   }
+
+  // Helper function to handle error 
+  function errorHandler(value) {
+    if(isNaN(parseInt(value) || value < 0 || !value)) {
+      return res.status(422).json({message: `Error: ${value} value is not valid!`});
+    }
+  }
 }
 
-app.use(function(req, res, next) {
-  res.status(404).json({message: "Page not found"});
-})
 module.exports = app;
