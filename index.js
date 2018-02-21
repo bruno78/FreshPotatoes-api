@@ -9,6 +9,7 @@ const { PORT=3000, NODE_ENV='development', DB_PATH='./db/database.db' } = proces
 const BASE_API_URL = 'http://credentials-api.generalassemb.ly/4576f55f-c427-4cfc-a11c-5bfe914ca6c1';
 const ERROR_MESSAGE = "Error: Missing Key";
 
+// CREATE CONNECTION TO DB
 const db = new sqlite3.Database('./db/database.db', sqlite3.OPEN_READONLY, err => {
   if (err) {
     console.error(err.stack);
@@ -25,12 +26,13 @@ Promise.resolve()
   .catch((err) => { if (NODE_ENV === 'development') console.error(err.stack); });
 
 
+// SET THE CONTENT TYPE RESPONSE
 app.use((req, res, next) => {
   res.set('Content-Type', 'application/json');
   next();
 })
 
-  // ROUTES
+// ROUTES
 app.get('/films/:id/recommendations', getFilmRecommendations);
 app.get('*', (req, res) => {
   res.status(404).json({ message: 'Page not found!'});
@@ -42,14 +44,13 @@ function getFilmRecommendations(req, res) {
 
   
   // Get the id of the parent movie from URI
-  let filmId = req.params.id;
-  // errorHandler(filmId, 'Film ID');
+  const filmId = req.params.id;
 
   // Set limit value 
-  let limit = req.query.limit || 10;
+  const limit = req.query.limit || 10;
 
   // Set offset value
-  let offset = req.query.offset || 0;
+  const offset = req.query.offset || 0;
 
   // First find movie by its id 
   db.get('SELECT id, title, genre_id FROM films WHERE id = $id', {$id: filmId}, 
@@ -57,8 +58,6 @@ function getFilmRecommendations(req, res) {
       if(err || !row) {
        return res.status(422).json({ message: 'Error: Invalid Film ID'});
       }
-      // res.status(200).json({film: row});
-      // console.log(row);
 
       // This query returns the id, title, release date and genre of ALL the movies that has the same genre and it's within 15 years before and after the parent film's release date orderd by film id.  
       db.all(`SELECT films.id, films.title, films.release_date, films.genre_id, genres.name FROM films
@@ -67,8 +66,8 @@ function getFilmRecommendations(req, res) {
               AND films.release_date >= date((SELECT films.release_date FROM films WHERE id = $id), '-15 years')
               AND films.release_date <= date((SELECT films.release_date FROM films WHERE id = $id), '+15 years')
               AND films.id <> $id
-              ORDER BY films.id ASC`,
-              {$id: filmId}, (err, rows) => {
+              ORDER BY films.id ASC`, {$id: filmId}, 
+              (err, rows) => {
     
                 if(err || !rows) {
                   return res.status(422).json({message: ERROR_MESSAGE});
@@ -136,28 +135,20 @@ function getFilmRecommendations(req, res) {
                       offset: offset
                     }
                   });
-
                 }); // end of request
       }); // end of db.all
   }); // end of db.get
-
+  
   // Helper method get the average rating for each review. 
   function getAvgRatings(reviews) {
     let sumOfReviews = 0.0;
-    let numOfReviews = reviews.length;
+    const numOfReviews = reviews.length;
     
     reviews.forEach( review => {
       sumOfReviews += review.rating;
     });
     return parseFloat((sumOfReviews / numOfReviews).toFixed(2));
   }
-
-  // Helper function to handle error 
-  function errorHandler(value, type) {
-    if(isNaN(parseInt(value) || !value)) {
-      return res.sendStatus(422).json({message: `Error: ${type} ${value} value is not valid!`});
-    }
-  }
-}
+} // end of getFilmRecommendations
 
 module.exports = app;
