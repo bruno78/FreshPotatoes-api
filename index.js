@@ -59,7 +59,8 @@ function getFilmRecommendations(req, res) {
        return res.status(422).json({ message: 'Error: Invalid Film ID'});
       }
 
-      // This query returns the id, title, release date and genre of ALL the movies that has the same genre and it's within 15 years before and after the parent film's release date orderd by film id.  
+      // This query returns the id, title, release date and genre of ALL the movies that has the same genre 
+      // and it's within 15 years before and after the parent film's release date orderd by film id.  
       db.all(`SELECT films.id, films.title, films.release_date, films.genre_id, genres.name FROM films
               INNER JOIN genres ON films.genre_id = genres.id
               WHERE genre_id = (SELECT genre_id FROM films WHERE id = $id)
