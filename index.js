@@ -7,7 +7,7 @@ const sqlite3 = require('sqlite3').verbose(), // Add more info to db stack trace
 const { PORT=3000, NODE_ENV='development', DB_PATH='./db/database.db' } = process.env;
 
 const BASE_API_URL = 'http://credentials-api.generalassemb.ly/4576f55f-c427-4cfc-a11c-5bfe914ca6c1';
-const ERROR_MESSAGE = "Error: Missing Key";
+const ERROR_MESSAGE = 'Error: Missing Key';
 
 // CREATE CONNECTION TO DB
 const db = new sqlite3.Database('./db/database.db', sqlite3.OPEN_READONLY, err => {
@@ -15,7 +15,7 @@ const db = new sqlite3.Database('./db/database.db', sqlite3.OPEN_READONLY, err =
     console.error(err.stack);
   }
   else {
-    console.log("Successfully conntected to Database");
+    console.log('Successfully conntected to Database');
   }
 });
 
@@ -52,7 +52,7 @@ function getFilmRecommendations(req, res) {
   // Set offset value
   const offset = req.query.offset || 0;
 
-  // First find movie by its id 
+  // First find movie by id 
   db.get('SELECT id, title, genre_id FROM films WHERE id = $id', {$id: filmId}, 
     (err, row) => {
       if(err || !row) {
@@ -84,7 +84,7 @@ function getFilmRecommendations(req, res) {
 
                 // Build the URI for the 3rd party API request 
                 const apiRequestURI = {
-                  uri: BASE_API_URL + "?films=" + filmIDList,
+                  uri: BASE_API_URL + '?films=' + filmIDList,
                   json: true
                 }
 
@@ -121,11 +121,6 @@ function getFilmRecommendations(req, res) {
                       } // end if avgRatigns
                     } // end if numReviews
                   } // end of for loop
-
-                  // Sorting recommendations by ID 
-                  recommendations.sort(function(a, b) {
-                    return a.id - b.id;
-                  });
 
                   // Sending results to the client 
                   return res.json({
